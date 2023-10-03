@@ -32,7 +32,7 @@ const SideDrawer = () => {
   const [search, setSearch] = useState("");
   const [searchResult, setsearchResult] = useState([]);
   const [loading, setloading] = useState(false);
-  const [loadingChat, setloadingChat] = useState(false);
+  const [loadingChat, setLoadingChat] = useState(false);
 
   const { user, setSelectedChat, chats, setChats } = ChatState();
   const history = useHistory();
@@ -81,7 +81,7 @@ const SideDrawer = () => {
 
   const accessChat = async (userId) => {
     try {
-      setloadingChat(true);
+      setLoadingChat(true);
 
       const config = {
         headers: {
@@ -91,11 +91,14 @@ const SideDrawer = () => {
       };
 
       const { data } = await axios.post("/api/chat", { userId }, config);
+      console.log(data);
 
-      if (!chats.find((c) => c._id === data._id)) setChats([data, ...chats]);
+      if (!chats.find((c) => c._id === data._id)) {
+        setChats([data, ...chats]);
+      }
 
       setSelectedChat(data);
-      setloadingChat(false);
+      setLoadingChat(false);
       onClose();
     } catch (error) {
       toast({
@@ -179,7 +182,7 @@ const SideDrawer = () => {
                 <UserListItem
                   key={user._id}
                   user={user}
-                  handleFuntion={() => accessChat(user._id)}
+                  handleFunction={() => accessChat(user._id)}
                 />
               ))
             )}
