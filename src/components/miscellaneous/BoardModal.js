@@ -1,35 +1,35 @@
-import { useDisclosure } from "@chakra-ui/hooks";
+import { useState } from "react";
 import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalCloseButton,
-  ModalBody,
-  ModalFooter,
-  Button,
-  useToast,
-  Input,
   Box,
+  Button,
+  FormControl,
+  Input,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  useDisclosure,
+  useToast,
 } from "@chakra-ui/react";
-import React, { useState } from "react";
+import { AddIcon } from "@chakra-ui/icons";
 import { useAppState } from "../../Context/AppProvider";
-import { FormControl } from "@chakra-ui/form-control";
 import axios from "axios";
-import UserListItem from "../UserAvatar/UserListItem";
 import UserBadgeItem from "../UserAvatar/UserBadgeItem";
+import UserListItem from "../UserAvatar/UserListItem";
 
-const GroupChatModal = ({ children }) => {
+const BoardModal = ({ children }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [groupChatName, setGroupChatName] = useState();
-  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [boardName, setBoardName] = useState("");
   const [search, setSearch] = useState("");
   const [searchResult, setSearchResult] = useState([]);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const { user, createBoard } = useAppState();
   const [loading, setLoading] = useState(false);
+  const { boards, setBoards } = useAppState();
 
   const toast = useToast();
-
-  const { user, chats, setChats } = useAppState();
 
   const handleSearch = async (query) => {
     setSearch(query);
@@ -61,8 +61,27 @@ const GroupChatModal = ({ children }) => {
     setLoading(false);
   };
 
+  const handleDelete = (delUser) => {
+    setSelectedUsers(selectedUsers.filter((sel) => sel._id !== delUser._id));
+  };
+
+  const handleGroup = (userToAdd) => {
+    if (selectedUsers.includes(userToAdd)) {
+      toast({
+        title: "User already added",
+        status: "warning",
+        duration: 5000,
+        isClosable: true,
+        position: "top",
+      });
+      return;
+    }
+
+    setSelectedUsers([...selectedUsers, userToAdd]);
+  };
+
   const handleSubmit = async () => {
-    if (!groupChatName || !selectedUsers) {
+    if (!boardName || !selectedUsers) {
       toast({
         title: "Please fill all the fields",
         status: "warning",
@@ -81,15 +100,15 @@ const GroupChatModal = ({ children }) => {
       };
 
       const { data } = await axios.post(
-        "/api/chat/group",
+        "/api/board",
         {
-          name: groupChatName,
+          boardName: boardName,
           users: JSON.stringify(selectedUsers.map((u) => u._id)),
         },
         config
       );
 
-      setChats([data, ...chats]);
+      setBoards([data, ...boards]);
       onClose();
       toast({
         title: "New group chat created",
@@ -109,46 +128,27 @@ const GroupChatModal = ({ children }) => {
       });
     }
   };
-  const handleDelete = (delUser) => {
-    setSelectedUsers(selectedUsers.filter((sel) => sel._id !== delUser._id));
-  };
 
-  const handleGroup = (userToAdd) => {
-    if (selectedUsers.includes(userToAdd)) {
-      toast({
-        title: "User already added",
-        status: "warning",
-        duration: 5000,
-        isClosable: true,
-        position: "top",
-      });
-      return;
-    }
-
-    setSelectedUsers([...selectedUsers, userToAdd]);
-  };
   return (
     <>
-      <span onClick={onOpen}>{children}</span>
-
+      <Button
+        display="flex"
+        fontSize={{ base: "17px", md: "10px", lg: "17px" }}
+        rightIcon={<AddIcon />}
+        onClick={onOpen}
+      >
+        New Board
+      </Button>
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader
-            fontSize="35px"
-            fontFamily="Work sans"
-            display="flex"
-            justifyContent="center"
-          >
-            Create Group Chat
-          </ModalHeader>
-          <ModalCloseButton />
+          <ModalHeader>Create a New Board</ModalHeader>
           <ModalBody display="flex" flexDir="column" alignItems="center">
             <FormControl>
               <Input
-                placeholder="Chat Name"
+                placeholder="Enter Board Name"
                 mb={3}
-                onChange={(e) => setGroupChatName(e.target.value)}
+                onChange={(e) => setBoardName(e.target.value)}
               />
             </FormControl>
             <FormControl>
@@ -181,10 +181,9 @@ const GroupChatModal = ({ children }) => {
                 ))
             )}
           </ModalBody>
-
           <ModalFooter>
             <Button colorScheme="blue" onClick={handleSubmit}>
-              Create chat
+              Create board
             </Button>
           </ModalFooter>
         </ModalContent>
@@ -193,4 +192,4 @@ const GroupChatModal = ({ children }) => {
   );
 };
 
-export default GroupChatModal;
+export default BoardModal;

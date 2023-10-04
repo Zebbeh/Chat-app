@@ -1,23 +1,21 @@
-import { useEffect, useState } from "react";
-import { useAppState } from "../Context/AppProvider";
+import React, { useEffect, useState } from "react";
 import { useToast } from "@chakra-ui/toast";
-import { ChatLoading } from "./ChatLoading";
 import { Box, Stack, Text } from "@chakra-ui/layout";
 import { Button } from "@chakra-ui/button";
 import axios from "axios";
 import { AddIcon } from "@chakra-ui/icons";
-import { getSender } from "../config/ChatLogics";
-import GroupChatModal from "./miscellaneous/GroupChatModal";
+import BoardModal from "./miscellaneous/BoardModal"; // Import the BoardModal component
+import { ChatLoading } from "./ChatLoading";
+import { useAppState } from "../Context/AppProvider";
 
-const MyChats = ({ fetchAgain }) => {
+const MyBoards = ({ fetchAgain }) => {
   const [loggedUser, setLoggedUser] = useState();
-  const { selectedChat, setSelectedChat, user, chats, setChats } =
+  const { selectedBoard, setSelectedBoard, user, boards, setBoards } =
     useAppState();
 
   const toast = useToast();
 
-  const fetchChats = async () => {
-    console.log(user.id);
+  const fetchBoards = async () => {
     try {
       const config = {
         headers: {
@@ -25,13 +23,14 @@ const MyChats = ({ fetchAgain }) => {
         },
       };
 
-      const { data } = await axios.get("/api/chat", config);
-      console.log(data);
-      setChats(data);
+      const { data } = await axios.get("/api/board", config);
+      console.log("Boards data:", data);
+      setBoards(data);
     } catch (error) {
+      console.error("Error fetching boards:", error);
       toast({
-        title: "Error occured!",
-        description: "Failed to load the chats",
+        title: "Error occurred!",
+        description: "Failed to load the boards",
         status: "error",
         duration: 5000,
         isClosable: true,
@@ -42,12 +41,12 @@ const MyChats = ({ fetchAgain }) => {
 
   useEffect(() => {
     setLoggedUser(JSON.parse(localStorage.getItem("userInfo")));
-    fetchChats();
+    fetchBoards();
   }, [fetchAgain]);
 
   return (
     <Box
-      display={{ base: selectedChat ? "none" : "flex", md: "flex" }}
+      display={{ base: selectedBoard ? "none" : "flex", md: "flex" }}
       flexDir="column"
       alignItems="center"
       p={3}
@@ -66,16 +65,16 @@ const MyChats = ({ fetchAgain }) => {
         justifyContent="space-between"
         alignItems="center"
       >
-        My Chats
-        <GroupChatModal>
+        My Boards
+        <BoardModal>
           <Button
             display="flex"
             fontSize={{ base: "17px", md: "10px", lg: "17px" }}
             rightIcon={<AddIcon />}
           >
-            New Group Chat
+            New Board
           </Button>
-        </GroupChatModal>
+        </BoardModal>
       </Box>
 
       <Box
@@ -88,24 +87,20 @@ const MyChats = ({ fetchAgain }) => {
         borderRadius="lg"
         overflow="hidden"
       >
-        {chats ? (
+        {boards ? (
           <Stack overflowY="scroll">
-            {chats.map((chat) => (
+            {boards.map((board) => (
               <Box
-                onClick={() => setSelectedChat(chat)}
+                onClick={() => setSelectedBoard(board)}
                 cursor="pointer"
-                bg={selectedChat === chat ? "#38B2AC" : "#E8E8E8"}
-                color={selectedChat === chat ? "white" : "black"}
+                bg={selectedBoard === board ? "#38B2AC" : "#E8E8E8"}
+                color={selectedBoard === board ? "white" : "black"}
                 px={3}
                 py={2}
                 borderRadius="lg"
-                key={chat._id}
+                key={board._id}
               >
-                <Text>
-                  {!chat.isGroupChat
-                    ? getSender(loggedUser, chat.users)
-                    : chat.chatName}
-                </Text>
+                <Text>{board.boardName}</Text>
               </Box>
             ))}
           </Stack>
@@ -117,4 +112,4 @@ const MyChats = ({ fetchAgain }) => {
   );
 };
 
-export default MyChats;
+export default MyBoards;

@@ -20,7 +20,7 @@ import {
 import { BellIcon, ChevronDownIcon } from "@chakra-ui/icons";
 import { Spinner } from "@chakra-ui/spinner";
 import React, { useState } from "react";
-import { ChatState } from "../../Context/ChatProvider";
+import { useAppState } from "../../Context/AppProvider";
 import ProfileModal from "./ProfileModal";
 import { useHistory } from "react-router-dom";
 import { useDisclosure } from "@chakra-ui/hooks";
@@ -34,7 +34,7 @@ const SideDrawer = () => {
   const [loading, setloading] = useState(false);
   const [loadingChat, setLoadingChat] = useState(false);
 
-  const { user, setSelectedChat, chats, setChats } = ChatState();
+  const { user, setSelectedChat, chats, setChats } = useAppState();
   const history = useHistory();
   const { isOpen, onOpen, onClose } = useDisclosure();
 

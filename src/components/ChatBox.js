@@ -1,10 +1,10 @@
 import React from "react";
-import { ChatState } from "../Context/ChatProvider";
+import { useAppState } from "../Context/AppProvider";
 import { Box } from "@chakra-ui/react";
 import SingleChat from "../components/SingleChat";
 
 const ChatBox = ({ fetchAgain, setFetchAgain }) => {
-  const { selectedChat } = ChatState();
+  const { selectedChat } = useAppState();
   return (
     <Box
       display={{ base: selectedChat ? "flex" : "none", md: "flex" }}
