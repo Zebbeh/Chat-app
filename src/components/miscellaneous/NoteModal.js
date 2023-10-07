@@ -1,138 +1,62 @@
 // NoteModal.js
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
 import {
-  Button,
-  Textarea,
   Modal,
   ModalOverlay,
   ModalContent,
   ModalHeader,
-  ModalFooter,
-  ModalBody,
   ModalCloseButton,
+  ModalBody,
+  ModalFooter,
+  Button,
   Input,
-  useToast,
+  Textarea,
 } from "@chakra-ui/react";
-import { useAppState } from "../../Context/AppProvider";
-import axios from "axios";
 
-const NoteModal = ({ isOpen, onClose }) => {
-  const [noteContent, setNoteContent] = useState("");
-  const [noteTitle, setNoteTitle] = useState("");
-  const { user, selectedBoard, setBoards } = useAppState();
-  const toast = useToast();
+const NoteModal = ({ isOpen, onClose, onCreateNote, boardId }) => {
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
 
-  const fetchNotes = useCallback(async () => {
-    try {
-      const config = {
-        headers: {
-          Authorization: `Bearer ${user.token}`,
-        },
-      };
-
-      const { data } = await axios.get(
-        `/api/board/${selectedBoard._id}/notes`,
-        config
-      );
-
-      setBoards((prevBoards) =>
-        prevBoards.map((board) =>
-          board._id === selectedBoard._id ? { ...board, notes: data } : board
-        )
-      );
-    } catch (error) {
-      console.error("Error fetching notes:", error);
-    }
-  }, [user.token, selectedBoard._id, setBoards]);
-
-  const handleNoteContentChange = (e) => {
-    setNoteContent(e.target.value);
-  };
-
-  const handleNoteTitleChange = (e) => {
-    setNoteTitle(e.target.value);
-  };
-
-  const handleAddNote = async () => {
-    if (!noteTitle || !noteContent) {
-      toast({
-        title: "Error occurred!",
-        description: "Failed to send the note",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-        position: "bottom-left",
-      });
+  const handleCreateNote = () => {
+    if (title.trim() === "" || content.trim() === "") {
       return;
     }
 
-    try {
-      const config = {
-        headers: {
-          "Content-type": "application/json",
-          Authorization: `Bearer ${user.token}`,
-        },
-      };
+    onCreateNote({
+      title,
+      content,
+      boardId: boardId,
+    });
 
-      const { data } = await axios.post(
-        "/api/note",
-        {
-          title: noteTitle,
-          content: noteContent,
-          boardId: selectedBoard._id,
-        },
-        config
-      );
-
-      setBoards((prevBoards) =>
-        prevBoards.map((board) =>
-          board._id === selectedBoard._id
-            ? { ...board, notes: [...board.notes, data] }
-            : board
-        )
-      );
-
-      // Fetch notes after a short delay to allow the server to update
-      setTimeout(() => {
-        fetchNotes();
-      }, 500);
-
-      onClose();
-    } catch (error) {
-      toast({
-        title: "Error Occurred!",
-        description: "Failed to load the messages",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-        position: "bottom",
-      });
-    }
+    // Close the modal and reset input values
+    onClose();
+    setTitle("");
+    setContent("");
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
+    <Modal isOpen={isOpen} onClose={onClose} size="md">
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Add a New Note</ModalHeader>
+        <ModalHeader>Create a New Note</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           <Input
-            value={noteTitle}
-            onChange={handleNoteTitleChange}
-            placeholder="Note title"
+            placeholder="Title"
+            mb={4}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
           />
           <Textarea
-            value={noteContent}
-            onChange={handleNoteContentChange}
-            placeholder="Enter your note here"
+            placeholder="Content"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
           />
         </ModalBody>
         <ModalFooter>
-          <Button colorScheme="blue" mr={3} onClick={handleAddNote}>
-            Add Note
+          <Button colorScheme="teal" onClick={handleCreateNote}>
+            Create Note
           </Button>
-          <Button onClick={onClose}>Cancel</Button>
         </ModalFooter>
       </ModalContent>
     </Modal>
