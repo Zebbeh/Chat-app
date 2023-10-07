@@ -92,6 +92,13 @@ const BoardModal = ({ children }) => {
       return;
     }
 
+    const formattedUsers = selectedUsers.map((u) => ({ _id: u }));
+
+    console.log("Data being sent:", {
+      boardName,
+      users: formattedUsers,
+    });
+
     try {
       const config = {
         headers: {
@@ -102,8 +109,8 @@ const BoardModal = ({ children }) => {
       const { data } = await axios.post(
         "/api/board",
         {
-          boardName: boardName,
-          users: JSON.stringify(selectedUsers.map((u) => u._id)),
+          boardName,
+          users: selectedUsers.map((u) => u._id),
         },
         config
       );
@@ -111,16 +118,21 @@ const BoardModal = ({ children }) => {
       setBoards([data, ...boards]);
       onClose();
       toast({
-        title: "New group chat created",
+        title: "New board created",
         status: "success",
         duration: 5000,
         isClosable: true,
         position: "bottom",
       });
+
+      console.log("Server response: ", data);
     } catch (error) {
+      const errorMessage =
+        error.response.data.message || "Failed to create the board";
+      console.log(errorMessage);
       toast({
-        title: "Failed to create the chat!",
-        description: error.response.data,
+        title: "Failed to create the board!",
+        description: errorMessage,
         status: "error",
         duration: 5000,
         isClosable: true,
@@ -161,7 +173,7 @@ const BoardModal = ({ children }) => {
             <Box w="100%" display="flex" flexWrap="wrap">
               {selectedUsers.map((u) => (
                 <UserBadgeItem
-                  key={user._id}
+                  key={u._id}
                   user={u}
                   handleFunction={() => handleDelete(u)}
                 />

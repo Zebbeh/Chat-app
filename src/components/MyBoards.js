@@ -1,19 +1,20 @@
+// MyBoards.js
 import React, { useEffect, useState } from "react";
-import { useToast } from "@chakra-ui/toast";
-import { Box, Stack, Text } from "@chakra-ui/layout";
-import { Button } from "@chakra-ui/button";
+import { Box, Stack, Text, Button } from "@chakra-ui/react";
 import axios from "axios";
-import { AddIcon } from "@chakra-ui/icons";
-import BoardModal from "./miscellaneous/BoardModal"; // Import the BoardModal component
+import { AddIcon, ChevronLeftIcon } from "@chakra-ui/icons";
+import BoardModal from "./miscellaneous/BoardModal";
 import { ChatLoading } from "./ChatLoading";
 import { useAppState } from "../Context/AppProvider";
+import NotesDisplay from "./NotesDisplay";
+import NoteModal from "./miscellaneous/NoteModal";
 
 const MyBoards = ({ fetchAgain }) => {
-  const [loggedUser, setLoggedUser] = useState();
   const { selectedBoard, setSelectedBoard, user, boards, setBoards } =
     useAppState();
-
-  const toast = useToast();
+  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
+  const [isNewBoardModalOpen, setIsNewBoardModalOpen] = useState(false);
+  const [notes, setNotes] = useState([]);
 
   const fetchBoards = async () => {
     try {
@@ -28,86 +29,105 @@ const MyBoards = ({ fetchAgain }) => {
       setBoards(data);
     } catch (error) {
       console.error("Error fetching boards:", error);
-      toast({
-        title: "Error occurred!",
-        description: "Failed to load the boards",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-        position: "bottom-left",
-      });
     }
   };
 
+  const clearSelectedBoard = () => {
+    setSelectedBoard(null);
+  };
+
+  const closeNewBoardModal = () => {
+    setIsNewBoardModalOpen(false);
+  };
+
+  const openNoteModal = () => {
+    console.log("Opening note modal");
+    setIsNoteModalOpen(true);
+  };
+
+  const closeNoteModal = () => {
+    setIsNoteModalOpen(false);
+  };
+
   useEffect(() => {
-    setLoggedUser(JSON.parse(localStorage.getItem("userInfo")));
     fetchBoards();
-  }, [fetchAgain]);
+  }, [user.token, fetchAgain]);
 
   return (
-    <Box
-      display={{ base: selectedBoard ? "none" : "flex", md: "flex" }}
-      flexDir="column"
-      alignItems="center"
-      p={3}
-      bg="white"
-      w={{ base: "100%", md: "31%" }}
-      borderRadius="lg"
-      borderWidth="1px"
-    >
-      <Box
-        pb={3}
-        px={3}
-        fontSize={{ base: "28px", md: "30px" }}
-        fontFamily="Work sans"
-        display="flex"
-        w="100%"
-        justifyContent="space-between"
-        alignItems="center"
-      >
-        My Boards
-        <BoardModal>
-          <Button
+    <Box p={3} bg="white" w="100%" borderRadius="lg" borderWidth="1px">
+      {selectedBoard ? (
+        <>
+          <Box
             display="flex"
-            fontSize={{ base: "17px", md: "10px", lg: "17px" }}
-            rightIcon={<AddIcon />}
+            justifyContent="space-between"
+            alignItems="center"
           >
-            New Board
-          </Button>
-        </BoardModal>
-      </Box>
+            <Button
+              onClick={clearSelectedBoard}
+              variant="link"
+              leftIcon={<ChevronLeftIcon />}
+            >
+              Back
+            </Button>
+            <Text>{selectedBoard.boardName}</Text>
+            <Button onClick={openNoteModal}>New Note</Button>
 
-      <Box
-        display="flex"
-        flexDir="column"
-        p={3}
-        bg="#F8F8F8"
-        w="100%"
-        h="100%"
-        borderRadius="lg"
-        overflow="hidden"
-      >
-        {boards ? (
-          <Stack overflowY="scroll">
-            {boards.map((board) => (
-              <Box
-                onClick={() => setSelectedBoard(board)}
-                cursor="pointer"
-                bg={selectedBoard === board ? "#38B2AC" : "#E8E8E8"}
-                color={selectedBoard === board ? "white" : "black"}
-                px={3}
-                py={2}
-                borderRadius="lg"
-                key={board._id}
+            <NoteModal
+              isOpen={isNoteModalOpen}
+              onClose={closeNoteModal}
+            ></NoteModal>
+          </Box>
+          <NotesDisplay />
+        </>
+      ) : (
+        <>
+          <Box
+            pb={3}
+            px={3}
+            fontSize={{ base: "28px", md: "30px" }}
+            fontFamily="Work sans"
+            display="flex"
+            w="100%"
+            justifyContent="space-between"
+            alignItems="center"
+          >
+            My Boards
+            <BoardModal onClose={closeNewBoardModal}>
+              <Button
+                display="flex"
+                fontSize={{ base: "17px", md: "10px", lg: "17px" }}
+                rightIcon={<AddIcon />}
               >
-                <Text>{board.boardName}</Text>
-              </Box>
-            ))}
+                New Board
+              </Button>
+            </BoardModal>
+          </Box>
+
+          <Stack overflowY="scroll">
+            {boards ? (
+              boards.map((board) => (
+                <Box
+                  onClick={() => {
+                    console.log("Board clicked:", board);
+                    setSelectedBoard(board);
+                  }}
+                  cursor="pointer"
+                  bg={selectedBoard === board ? "#38B2AC" : "#E8E8E8"}
+                  color={selectedBoard === board ? "white" : "black"}
+                  px={3}
+                  py={2}
+                  borderRadius="lg"
+                  key={board._id}
+                >
+                  <Text>{board.boardName}</Text>
+                </Box>
+              ))
+            ) : (
+              <ChatLoading />
+            )}
           </Stack>
-        ) : (
-          <ChatLoading />
-        )}
-      </Box>
+        </>
+      )}
     </Box>
   );
 };
