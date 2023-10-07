@@ -21,8 +21,7 @@ import Note from "../components/miscellaneous/Note";
 import { useHistory } from "react-router-dom";
 import { useAppState } from "../Context/AppProvider";
 import NoteModal from "../components/miscellaneous/NoteModal";
-import NoteEditModal from "../components/miscellaneous/NoteEditModal";
-import { getSender } from "../config/ChatLogics";
+import UpdateBoardModal from "../components/miscellaneous/UpdateBoardModal";
 
 const SingleBoardPage = () => {
   const [notes, setNotes] = useState([]);
@@ -36,6 +35,7 @@ const SingleBoardPage = () => {
   const [editingNote, setEditingNote] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedNote, setSelectedNote] = useState(null);
+  const { fetchAgain, setFetchAgain } = useAppState();
 
   const openEditModal = (note) => {
     setEditedNote(note);
@@ -222,6 +222,7 @@ const SingleBoardPage = () => {
           </ModalFooter>
         </ModalContent>
       </Modal>
+      <UpdateBoardModal fetchAgain={fetchAgain} setFetchAgain={setFetchAgain} />
     </Box>
   );
 };
