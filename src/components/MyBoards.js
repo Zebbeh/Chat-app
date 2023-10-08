@@ -8,6 +8,10 @@ import { ChatLoading } from "./ChatLoading";
 import { useAppState } from "../Context/AppProvider";
 import NotesDisplay from "./NotesDisplay";
 import NoteModal from "./miscellaneous/NoteModal";
+import io from "socket.io-client";
+
+const ENDPOINT = "http://localhost:5000";
+var socket;
 
 const MyBoards = ({ fetchAgain }) => {
   const { selectedBoard, setSelectedBoard, user, boards, setBoards } =
@@ -42,6 +46,7 @@ const MyBoards = ({ fetchAgain }) => {
               onClick={() => {
                 console.log("Board clicked:", board);
                 setSelectedBoard(board);
+                socket.emit("join board", selectedBoard._id);
               }}
               cursor="pointer"
               bg={selectedBoard === board ? "#38B2AC" : "#E8E8E8"}

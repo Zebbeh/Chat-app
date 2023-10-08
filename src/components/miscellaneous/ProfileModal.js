@@ -13,10 +13,17 @@ import {
   Text,
   useDisclosure,
 } from "@chakra-ui/react";
-import React from "react";
+import React, { useEffect } from "react";
 
 const ProfileModal = ({ user, children }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
+
+  useEffect(() => {
+    console.log("passowrdchanemodal mounted");
+    return () => {
+      console.log("PasswordChangeModal unmounted");
+    };
+  });
 
   return (
     <>
@@ -31,7 +38,7 @@ const ProfileModal = ({ user, children }) => {
       )}
       <Modal size="lg" isOpen={isOpen} onClose={onClose} isCentered>
         <ModalOverlay />
-        <ModalContent h="410px">
+        <ModalContent h="410px" bg="white">
           <ModalHeader
             fontSize="40px"
             fontFamily="Work sans"
@@ -60,7 +67,6 @@ const ProfileModal = ({ user, children }) => {
               Email: {user.email}
             </Text>
           </ModalBody>
-
           <ModalFooter>
             <Button colorScheme="blue" mr={3} onClick={onClose}>
               Close

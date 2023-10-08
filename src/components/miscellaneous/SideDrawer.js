@@ -19,7 +19,7 @@ import {
 } from "@chakra-ui/react";
 import { BellIcon, ChevronDownIcon } from "@chakra-ui/icons";
 import { Spinner } from "@chakra-ui/spinner";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useAppState } from "../../Context/AppProvider";
 import ProfileModal from "./ProfileModal";
 import { useHistory } from "react-router-dom";
@@ -28,12 +28,18 @@ import axios from "axios";
 import { ChatLoading } from "../ChatLoading";
 import UserListItem from "../UserAvatar/UserListItem";
 import { getSender } from "../../config/ChatLogics";
+import PasswordChangeModal from "./PasswordChangeModal";
 
 const SideDrawer = () => {
   const [search, setSearch] = useState("");
   const [searchResult, setsearchResult] = useState([]);
   const [loading, setloading] = useState(false);
   const [loadingChat, setLoadingChat] = useState(false);
+  const {
+    isOpen: isPasswordModalOpen,
+    onOpen: onPasswordModalOpen,
+    onClose: onPasswordModalClose,
+  } = useDisclosure();
 
   const {
     user,
@@ -44,7 +50,11 @@ const SideDrawer = () => {
     setNotification,
   } = useAppState();
   const history = useHistory();
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: isProfileModalOpen, // Separate useDisclosure for ProfileModal
+    onOpen: onProfileModalOpen,
+    onClose: onProfileModalClose,
+  } = useDisclosure();
 
   const logoutHandler = () => {
     localStorage.removeItem("userInfo");
@@ -107,7 +117,7 @@ const SideDrawer = () => {
 
       setSelectedChat(data);
       setLoadingChat(false);
-      onClose();
+      onProfileModalClose();
     } catch (error) {
       toast({
         title: "Error fetching the chat",
@@ -119,6 +129,10 @@ const SideDrawer = () => {
       });
     }
   };
+
+  useEffect(() => {
+    console.log("PAsswordChangeMoodal mounted");
+  }, []);
   return (
     <>
       <Box
@@ -131,7 +145,7 @@ const SideDrawer = () => {
         borderWidth="5px"
       >
         <Tooltip label="Search users to chat" hasArrow placement="bottom-end">
-          <Button variant="ghost" onClick={onOpen}>
+          <Button variant="ghost" onClick={isProfileModalOpen}>
             <i class="fas fa-search"></i>
             <Text display={{ base: "none", md: "flex" }} px="4">
               Search User
@@ -177,6 +191,7 @@ const SideDrawer = () => {
               <ProfileModal user={user}>
                 <MenuItem>My Profile</MenuItem>
               </ProfileModal>
+              <MenuItem onClick={onPasswordModalOpen}>Change Password</MenuItem>
               <MenuDivider />
               <MenuItem onClick={logoutHandler}>Logout</MenuItem>
             </MenuList>
@@ -184,7 +199,11 @@ const SideDrawer = () => {
         </div>
       </Box>
 
-      <Drawer placement="left" onClose={onClose} isOpen={isOpen}>
+      <Drawer
+        placement="left"
+        onClose={onProfileModalClose}
+        isOpen={isProfileModalOpen}
+      >
         <DrawerOverlay />
         <DrawerContent>
           <DrawerHeader borderBottomWidth="1px">Search Users</DrawerHeader>
@@ -213,6 +232,20 @@ const SideDrawer = () => {
           </DrawerBody>
         </DrawerContent>
       </Drawer>
+      <PasswordChangeModal
+        isOpen={isPasswordModalOpen}
+        onClose={onPasswordModalClose}
+        onChangePassword={(currentPassword, newPassword) => {
+          console.log(
+            "Changing password for user:",
+            user,
+            "Current Password: ",
+            currentPassword,
+            "New Password:",
+            newPassword
+          );
+        }}
+      />
     </>
   );
 };

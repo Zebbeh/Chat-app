@@ -1,110 +1,82 @@
-import React, { useState } from "react";
+import { ViewIcon } from "@chakra-ui/icons";
 import {
+  Box,
+  Button,
+  FormControl,
+  IconButton,
+  Input,
   Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
   ModalBody,
   ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  Spinner,
+  useDisclosure,
   useToast,
-  Box,
-  FormControl,
-  Input,
 } from "@chakra-ui/react";
-import { useDisclosure } from "@chakra-ui/hooks";
-import { ViewIcon } from "@chakra-ui/icons";
-import { IconButton, Button } from "@chakra-ui/button";
-import axios from "axios";
-import { Spinner } from "@chakra-ui/spinner";
+import React, { useState } from "react";
 import UserBadgeItem from "../UserAvatar/UserBadgeItem";
 import UserListItem from "../UserAvatar/UserListItem";
+import { useAppState } from "../../Context/AppProvider";
+import axios from "axios";
 
-const UpdateBoardModal = ({ fetchAgain, setFetchAgain }) => {
+const UpdateBoardModal = ({ fetchAgain, setFetchAgain, fetchNotes }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [boardName, setBoardName] = useState("");
+  const [boardName, setBoardName] = useState();
   const [search, setSearch] = useState("");
   const [searchResult, setSearchResult] = useState([]);
   const [loading, setLoading] = useState(false);
   const [renameLoading, setRenameLoading] = useState(false);
-  const [user, selectedBoard, setSelectedBoard] = useState();
 
   const toast = useToast();
 
-  const handleRemoveUser = async (userId) => {
-    if (!selectedBoard || !selectedBoard.users) {
-      console.error("selectedBoard or selectedBoard.users is undefined");
+  const { selectedBoard, setSelectedBoard, user } = useAppState();
+  // FIX ERROR NOT DEFINED
+  const handleRemove = async (user1) => {
+    if (selectedBoard.boardAdmin._id !== user._id && user._id !== user.id) {
+      toast({
+        title: "Only admins can remove someone!",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+        position: "bottom",
+      });
       return;
     }
     try {
       setLoading(true);
-
       const config = {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
       };
-
       const { data } = await axios.put(
-        "/api/board/boardremove",
+        `/api/board/boardremove`,
         {
           boardId: selectedBoard._id,
-          userId,
+          userId: user1._id,
         },
         config
       );
 
-      setFetchAgain(!fetchAgain);
+      user1._id === user.id ? setSelectedBoard() : setSelectedBoard(data);
+      fetchNotes();
       setLoading(false);
     } catch (error) {
       toast({
-        title: "Error Occurred!",
-        description: error.response.data.message,
+        title: "Error occured!",
         status: "error",
+        description: error.response.data.message, // FIX ERROR.RESP NOT DEFINED
         duration: 5000,
         isClosable: true,
-        position: "bottom-left",
+        position: "bottom",
       });
-      setLoading(false);
     }
   };
-
-  const handleAddUser = async (userId) => {
-    try {
-      setLoading(true);
-
-      const config = {
-        headers: {
-          Authorization: `Bearer ${user.token}`,
-        },
-      };
-
-      const { data } = await axios.put(
-        "/api/board/boardadd",
-        {
-          boardId: selectedBoard._id,
-          userId,
-        },
-        config
-      );
-
-      setSelectedBoard(data);
-      setFetchAgain(!fetchAgain);
-      setLoading(false);
-    } catch (error) {
-      toast({
-        title: "Error Occurred!",
-        description: error.response.data.message,
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-        position: "bottom-left",
-      });
-      setLoading(false);
-    }
-  };
-
-  const handleRenameBoard = async () => {
+  // ADD ROUTE FOR RENAMING BOARD
+  const handleRename = async () => {
     if (!boardName) return;
 
     try {
@@ -120,21 +92,20 @@ const UpdateBoardModal = ({ fetchAgain, setFetchAgain }) => {
         "/api/board/rename",
         {
           boardId: selectedBoard._id,
-          boardName,
+          boardName: boardName,
         },
         config
       );
-
-      setFetchAgain(!fetchAgain);
+      setSelectedBoard(data);
       setRenameLoading(false);
     } catch (error) {
       toast({
-        title: "Error Occurred!",
+        title: "Error Occured!",
         description: error.response.data.message,
         status: "error",
         duration: 5000,
         isClosable: true,
-        position: "bottom-left",
+        position: "bottom",
       });
       setRenameLoading(false);
     }
@@ -142,9 +113,58 @@ const UpdateBoardModal = ({ fetchAgain, setFetchAgain }) => {
     setBoardName("");
   };
 
+  // Working
   const handleSearch = async (query) => {
     setSearch(query);
     if (!query) {
+      return;
+    }
+    try {
+      setLoading(true);
+
+      const config = {
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
+      };
+      const { data } = await axios.get(`/api/user?search=${search}`, config);
+      console.log(data);
+      setLoading(false);
+      setSearchResult(data);
+    } catch (error) {
+      toast({
+        title: "Error Occured!",
+        description: "Failed to load the search results",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+        position: "bottom-left",
+      });
+    }
+    setLoading(false);
+  };
+
+  // Working
+  const handleAddUser = async (user1) => {
+    if (selectedBoard.users.find((u) => u._id === user1._id)) {
+      toast({
+        title: "User Already in group!",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+        position: "bottom",
+      });
+      return;
+    }
+
+    if (selectedBoard.boardAdmin._id !== user._id) {
+      toast({
+        title: "Only admins can add someone!",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+        position: "bottom",
+      });
       return;
     }
 
@@ -157,20 +177,29 @@ const UpdateBoardModal = ({ fetchAgain, setFetchAgain }) => {
         },
       };
 
-      const { data } = await axios.get(`/api/user?search=${search}`, config);
+      const { data } = await axios.put(
+        "/api/board/boardadd",
+        {
+          boardId: selectedBoard._id,
+          userId: user1._id,
+        },
+        config
+      );
+
+      setSelectedBoard(data);
+      //setFetchAgain(!fetchAgain);
       setLoading(false);
-      setSearchResult(data);
     } catch (error) {
       toast({
-        title: "Error Occurred!",
-        description: "Failed to load the search results",
+        title: "Error Occured!",
+        description: error.data.message,
         status: "error",
         duration: 5000,
         isClosable: true,
-        position: "bottom-left",
+        position: "bottom",
       });
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -199,13 +228,13 @@ const UpdateBoardModal = ({ fetchAgain, setFetchAgain }) => {
                 <UserBadgeItem
                   key={user._id}
                   user={u}
-                  handleFunction={() => handleRemoveUser(u._id)}
+                  handleFunction={() => handleRemove(u)}
                 />
               ))}
             </Box>
             <FormControl display="flex">
               <Input
-                placeholder="Board name"
+                placeholder="Chat name"
                 mb={3}
                 value={boardName}
                 onChange={(e) => setBoardName(e.target.value)}
@@ -215,14 +244,14 @@ const UpdateBoardModal = ({ fetchAgain, setFetchAgain }) => {
                 colorScheme="teal"
                 ml={1}
                 isLoading={renameLoading}
-                onClick={handleRenameBoard}
+                onClick={handleRename}
               >
                 Update
               </Button>
             </FormControl>
             <FormControl>
               <Input
-                placeholder="Add user to board"
+                placeholder="Add user to group"
                 mb={1}
                 onChange={(e) => handleSearch(e.target.value)}
               />
@@ -234,18 +263,15 @@ const UpdateBoardModal = ({ fetchAgain, setFetchAgain }) => {
                 <UserListItem
                   key={user._id}
                   user={user}
-                  handleFunction={() => handleAddUser(user._id)}
+                  handleFunction={() => handleAddUser(user)}
                 />
               ))
             )}
           </ModalBody>
 
           <ModalFooter>
-            <Button
-              onClick={() => handleRemoveUser(user._id)}
-              colorScheme="red"
-            >
-              Leave Board
+            <Button onClick={() => handleRemove(user)} colorScheme="red">
+              Leave Group
             </Button>
           </ModalFooter>
         </ModalContent>

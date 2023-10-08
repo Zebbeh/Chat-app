@@ -8,7 +8,6 @@ import {
   Input,
   VStack,
   HStack,
-  Collapse,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -22,6 +21,10 @@ import { useHistory } from "react-router-dom";
 import { useAppState } from "../Context/AppProvider";
 import NoteModal from "../components/miscellaneous/NoteModal";
 import UpdateBoardModal from "../components/miscellaneous/UpdateBoardModal";
+import io from "socket.io-client";
+
+const ENDPOINT = "http://localhost:5000";
+var socket, selectedBoardCompare;
 
 const SingleBoardPage = () => {
   const [notes, setNotes] = useState([]);
@@ -36,6 +39,7 @@ const SingleBoardPage = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedNote, setSelectedNote] = useState(null);
   const { fetchAgain, setFetchAgain } = useAppState();
+  const [socketConnected, setSocketConnected] = useState(false);
 
   const openEditModal = (note) => {
     setEditedNote(note);
@@ -67,10 +71,44 @@ const SingleBoardPage = () => {
       console.log("Server response:", data);
 
       setNotes((prevNotes) =>
-        prevNotes.map((note) => (note.id === data._id ? data : note))
+        prevNotes.map((note) =>
+          note.id === data._id ? { ...data, position: note.position } : note
+        )
+      );
+      socket.emit("new note", data);
+      closeEditModal();
+      fetchBoardNotes();
+    } catch (error) {
+      console.error("Error updating note:", error);
+    }
+  };
+  const handleDragStop = async (note, newPosition) => {
+    console.log("newposition: ", newPosition);
+
+    try {
+      const config = {
+        headers: {
+          "Content-type": "application/json",
+          Authorization: `Bearer ${user.token}`,
+        },
+      };
+      const updatedPosition = note.position || { x: 0, y: 0 };
+      const { data } = await axios.put(
+        `/api/note/${note._id}`,
+        {
+          position: newPosition,
+        },
+        config
       );
 
-      closeEditModal();
+      setNotes((prevNotes) =>
+        prevNotes.map((prevNote) =>
+          prevNote._id === data._id
+            ? { ...prevNote, position: data.position }
+            : prevNote
+        )
+      );
+
       fetchBoardNotes();
     } catch (error) {
       console.error("Error updating note:", error);
@@ -91,15 +129,23 @@ const SingleBoardPage = () => {
       );
 
       setNotes(data);
-      console.log(data);
+      console.log("Fetched notes: ", data);
+      socket.emit("join board", selectedBoard._id);
     } catch (error) {
       console.error("Error fetching board notes:", error);
     }
   };
   useEffect(() => {
+    socket = io(ENDPOINT);
+    socket.emit("setup", user);
+    socket.on("connected", () => setSocketConnected(true));
     console.log("Selected board:", selectedBoard);
+  }, []);
+
+  useEffect(() => {
     fetchBoardNotes();
-  }, [selectedBoard._id]);
+    selectedBoardCompare = selectedBoard;
+  }, [selectedBoard]);
 
   const openNoteModal = () => {
     setIsNoteModalOpen(true);
@@ -123,10 +169,15 @@ const SingleBoardPage = () => {
           title: noteData.title,
           content: noteData.content,
           boardId: noteData.boardId,
+          position: { x: 0, y: 0 },
+          color: "yellow",
         },
         config
       );
+
       setNotes((prevNotes) => [...prevNotes, data]);
+
+      socket.emit("new note", data);
       console.log(data);
       closeNoteModal(); // Close the modal after creating the note
     } catch (error) {
@@ -154,29 +205,42 @@ const SingleBoardPage = () => {
       console.error("Error removing note:", error);
     }
   };
-
   return (
     <Box p={6}>
       {/* Heading section (you can add it later) */}
       <VStack align="stretch" spacing={4}>
-        <HStack>
+        <HStack justifyContent="space-between">
           <Button onClick={navigateToMyBoards}>Back to My Boards</Button>
           <Text fontFamily="Work sans" fontSize="2xl" fontWeight="bold">
-            {selectedBoard.boardName}
+            {selectedBoard.boardName.toUpperCase()}
           </Text>
           <Button onClick={openNoteModal}>New note</Button>
+          <UpdateBoardModal></UpdateBoardModal>
         </HStack>
-        {notes.map((note) => (
-          <Note
-            key={note._id}
-            title={note.title}
-            content={note.content}
-            createdAt={note.createdAt}
-            updatedAt={note.updatedAt}
-            onEdit={() => openEditModal(note)}
-            onRemove={() => handleRemoveNote(note._id)}
-          />
-        ))}
+
+        {notes.length > 0 ? (
+          notes.map((note) => (
+            <Note
+              key={note._id}
+              id={note._id}
+              title={note.title}
+              content={note.content}
+              createdAt={note.createdAt}
+              updatedAt={note.updatedAt}
+              color={note.color}
+              xpos={note.position ? note.position.x : 0}
+              ypos={note.position ? note.position.y : 0}
+              onEdit={() => {
+                console.log("Editing note:", note);
+                openEditModal(note);
+              }}
+              onRemove={() => handleRemoveNote(note._id)}
+              onDragStop={(event, data) => handleDragStop(note, data)}
+            />
+          ))
+        ) : (
+          <Text>No notes available for this board.</Text>
+        )}
       </VStack>
 
       <NoteModal
@@ -222,7 +286,6 @@ const SingleBoardPage = () => {
           </ModalFooter>
         </ModalContent>
       </Modal>
-      <UpdateBoardModal fetchAgain={fetchAgain} setFetchAgain={setFetchAgain} />
     </Box>
   );
 };
