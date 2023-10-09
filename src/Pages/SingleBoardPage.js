@@ -75,7 +75,8 @@ const SingleBoardPage = () => {
           note.id === data._id ? { ...data, position: note.position } : note
         )
       );
-      socket.emit("new note", data);
+      socket.emit("new received", data);
+      console.log("Note received event emitted");
       closeEditModal();
       fetchBoardNotes();
     } catch (error) {
@@ -110,6 +111,17 @@ const SingleBoardPage = () => {
       );
 
       fetchBoardNotes();
+
+      socket.emit(
+        "new note",
+        {
+          board: {
+            _id: selectedBoard._id,
+            users: selectedBoard.users,
+          },
+        },
+        data
+      );
     } catch (error) {
       console.error("Error updating note:", error);
     }
@@ -139,6 +151,11 @@ const SingleBoardPage = () => {
     socket = io(ENDPOINT);
     socket.emit("setup", user);
     socket.on("connected", () => setSocketConnected(true));
+    socket.on("update board", (updateData) => {
+      console.log("Received update from server:", updateData);
+      fetchBoardNotes(); // Make sure this function fetches the updated notes
+    });
+
     console.log("Selected board:", selectedBoard);
   }, []);
 
@@ -175,10 +192,12 @@ const SingleBoardPage = () => {
         config
       );
 
+      console.log("New note created:", data);
+
       setNotes((prevNotes) => [...prevNotes, data]);
 
-      socket.emit("new note", data);
-      console.log(data);
+      socket.emit("note received", data);
+      console.log("Note received event emitted");
       closeNoteModal(); // Close the modal after creating the note
     } catch (error) {
       console.error("Error creating note:", error);
