@@ -130,9 +130,6 @@ const SideDrawer = () => {
     }
   };
 
-  useEffect(() => {
-    console.log("PAsswordChangeMoodal mounted");
-  }, []);
   return (
     <>
       <Box

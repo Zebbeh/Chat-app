@@ -124,12 +124,9 @@ const BoardModal = ({ children }) => {
         isClosable: true,
         position: "bottom",
       });
-
-      console.log("Server response: ", data);
     } catch (error) {
       const errorMessage =
         error.response.data.message || "Failed to create the board";
-      console.log(errorMessage);
       toast({
         title: "Failed to create the board!",
         description: errorMessage,

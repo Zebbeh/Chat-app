@@ -7,6 +7,7 @@ import {
   Button,
   Circle,
   position,
+  useToast,
 } from "@chakra-ui/react";
 import { CloseIcon } from "@chakra-ui/icons";
 import Draggable from "react-draggable";
@@ -29,6 +30,8 @@ const Note = ({
   const [selectedColor, setSelectedColor] = useState("yellow");
   const { user } = useAppState();
 
+  const toast = useToast();
+
   const handleDragStop = (e, data) => {
     const { x, y } = data;
     console.log(x, y);
@@ -42,7 +45,6 @@ const Note = ({
   };
 
   const saveColorToServer = async (color) => {
-    console.log("changed color");
     try {
       const config = {
         headers: {
@@ -52,12 +54,19 @@ const Note = ({
       };
 
       await axios.put(`/api/note/${id}`, { color }, config);
-    } catch (error) {}
+    } catch (error) {
+      toast({
+        title: "Error Occured!",
+        description: "Failed to save the color to the server",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+        position: "bottom",
+      });
+    }
   };
 
-  useEffect(() => {
-    console.log("Note component received updated position:", position);
-  }, [position]);
+  useEffect(() => {}, [position]);
   return (
     <Draggable position={{ x: xpos, y: ypos }} onStop={handleDragStop}>
       <Box
